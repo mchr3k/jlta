@@ -1,0 +1,55 @@
+<project name="Java Live Thread Analysis" basedir="." default="help">
+
+  <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="./lib/ant-contrib-1.0b3.jar" />
+  <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask"
+           classpath="./lib/jarjar-1.0.jar"/>
+  <taskdef name="jarbundler" classname="net.sourceforge.jarbundler.JarBundler" 
+           classpath="./lib/jarbundler-2.2.0.jar"/>
+
+  <target name="help">
+    <java classname="org.apache.tools.ant.Main">
+      <arg value="-projecthelp" />
+    </java>
+  </target>
+
+  <target name="clean" description="Comile classes">
+    <delete dir="./build" />
+  </target>
+
+  <target name="build" description="Compile classes">
+    <mkdir dir="./build" />
+    <mkdir dir="./build/classes" />
+
+    <javac destdir="./build/classes" debug="true" source="1.6" target="1.6"
+           includeantruntime="false">
+      <src path="./src"/>
+      <classpath>
+        <fileset dir="./lib" includes="*.jar" />
+      </classpath>
+    </javac>
+  </target>
+
+
+  <target name="jar" description="Create Jars" depends="build" >
+
+    <mkdir dir="./build/tmp/" />
+    <mkdir dir="./build/jars/" />
+
+    <!-- Agent -->
+    <jarjar jarfile="./build/jars/jlta-agent.jar">
+      <manifest>
+        <attribute name="Premain-Class" value="org.jlta.agent.Agent" />
+        <attribute name="Agent-Class" value="org.jlta.agent.Agent" />
+        <attribute name="Can-Retransform-Classes" value="true" />
+        <attribute name="Class-Path" value="." />
+      </manifest>
+      <fileset dir="./build/classes" includes="**/agent/**/*.class" />
+      <zipfileset excludes="META-INF/*.MF" src="./lib/asm-debug-all-4.0.jar"/>
+      <rule pattern="org.objectweb.asm.**" result="org.jlta.internal.objectweb.asm.@1"/>
+      <zipfileset excludes="META-INF/*.MF" src="./lib/commons-io-2.1.jar"/>
+      <rule pattern="org.apache.commons.**" result="org.jlta.internal.apache.commons.@1"/>
+    </jarjar>
+    <copy file="./build/jars/jlta-agent.jar" todir="./lib/" />
+  </target>
+
+</project>
