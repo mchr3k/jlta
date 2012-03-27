@@ -16,7 +16,7 @@ public class AgentInit
     System.out.println("## Loaded JLTA Agent.");
 
     // Add transformer
-    inst.addTransformer(new ThreadClassTransformer(), true);
+    inst.addTransformer(new ThreadClassTransformer(false), true);
 
     // Retransform all loaded classes
     for (Class<?> loadedClass : inst.getAllLoadedClasses())
