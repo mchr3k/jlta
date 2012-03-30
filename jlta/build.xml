@@ -1,10 +1,16 @@
 <project name="Java Live Thread Analysis" basedir="." default="help">
 
   <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="./lib/ant-contrib-1.0b3.jar" />
+
+  <!-- Package jars within jars including package renaming -->
   <taskdef name="jarjar" classname="com.tonicsystems.jarjar.JarJarTask"
            classpath="./lib/jarjar-1.0.jar"/>
+  <!-- Package SWT jars -->
+  <taskdef name="swtjar" classname="org.swtjar.ant.SWTJarTask"
+             classpath="./lib/swtjar.jar"/>
+  <!-- Package OSX bundle -->
   <taskdef name="jarbundler" classname="net.sourceforge.jarbundler.JarBundler" 
-           classpath="./lib/jarbundler-2.2.0.jar"/>
+             classpath="./lib/jarbundler-2.2.0.jar"/>
 
   <target name="help">
     <java classname="org.apache.tools.ant.Main">
@@ -44,12 +50,61 @@
         <attribute name="Class-Path" value="." />
       </manifest>
       <fileset dir="./build/classes" includes="**/agent/**/*.class" />
+      <fileset dir="./build/classes" includes="**/common/**/*.class" />
       <zipfileset excludes="META-INF/*.MF" src="./lib/asm-debug-all-4.0.jar"/>
       <rule pattern="org.objectweb.asm.**" result="org.jlta.internal.objectweb.asm.@1"/>
       <zipfileset excludes="META-INF/*.MF" src="./lib/commons-io-2.1.jar"/>
       <rule pattern="org.apache.commons.**" result="org.jlta.internal.apache.commons.@1"/>
     </jarjar>
     <copy file="./build/jars/jlta-agent.jar" todir="./lib/" />
+
+
+    <!-- UI (Cross platform SWT Jar (Windows/Linux)) -->
+    <swtjar jarfile="./build/jars/jlta.jar"
+	        targetmainclass="org.jlta.ui.UI"
+	        swtversion="3.6.2">
+      <!-- JLTA classes -->
+      <fileset dir="./build/classes" includes="**/*.class" excludes="**/agent/*.class" />
+
+      <!-- Required Jars -->
+      <zipfileset excludes="META-INF/*.MF" src="lib/miglayout-3.7.3.1-swt.jar"/>
+
+      <!-- SWT Jars -->
+      <fileset dir="./lib" includes="swt-win*-3.6.2.jar" />
+      <fileset dir="./lib" includes="swt-lin*-3.6.2.jar" />
+    </swtjar>
+
+    <!-- UI (Cross platform SWT Jar (Windows/Linux)) -->
+    <swtjar jarfile="./build/tmp/jlta-osx.jar"
+	        targetmainclass="org.jlta.ui.UI"
+	        swtversion="3.6.2">
+      <!-- JLTA classes -->
+      <fileset dir="./build/classes" includes="**/*.class" excludes="**/agent/*.class" />
+
+      <!-- Required Jars -->
+      <zipfileset excludes="META-INF/*.MF" src="lib/miglayout-3.7.3.1-swt.jar"/>
+
+      <!-- SWT Jars -->
+      <fileset dir="./lib" includes="swt-osx*-3.6.2.jar" />
+    </swtjar>
+
+    <!-- UI (OSX application) -->
+    <mkdir dir="./build/tmp/JLTAApp/" />
+    <jarbundler dir="./build/tmp/JLTAApp/"
+                name="JLTA"
+                mainclass="org.swtjar.SWTLoader" 
+                jar="./build/tmp/jlta-osx.jar" 
+                startOnMainThread="true" 
+                stubfile="./lib/JavaApplicationStub" />
+    <delete file="./build/tmp/JLTAApp/JLTA.app/Contents/MacOS/JavaApplicationStub" />
+    <mkdir dir="./build/tmp/JLTAAppLauncher/JLTA.app/Contents/MacOS/" />
+    <copy file="./lib/JavaApplicationStub" 
+          todir="./build/tmp/JLTAAppLauncher/JLTA.app/Contents/MacOS/" />
+    <tar destfile="./build/jars/JLTA.app.tar">
+      <tarfileset dir="./build/tmp/JLTAAppLauncher/" filemode="777" />
+      <tarfileset dir="./build/tmp/JLTAApp/" />
+    </tar>
+
   </target>
 
 </project>

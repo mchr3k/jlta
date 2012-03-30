@@ -107,6 +107,10 @@ public class ThreadClassWriter extends ClassVisitor
     @Override
     public void visitMaxs(int maxStack, int maxLocals)
     {
+      // Jump to end of finally block
+      Label finallyEnd = this.newLabel();
+      this.goTo(finallyEnd);
+
       // Finally block is really a catch Throwable block
       mv.visitLabel(tryEnd);
       mv.visitLabel(finallyStart);
@@ -120,6 +124,9 @@ public class ThreadClassWriter extends ClassVisitor
       // Rethrow stored Throwable
       mv.visitVarInsn(Opcodes.ALOAD, 1);
       mv.visitInsn(Opcodes.ATHROW);
+
+      // Define end of finally block
+      mv.visitLabel(finallyEnd);
 
       super.visitMaxs(maxStack, maxLocals);
     }

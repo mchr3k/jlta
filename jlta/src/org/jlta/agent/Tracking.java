@@ -1,59 +1,16 @@
 package org.jlta.agent;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.jlta.agent.Tracking.ThreadData.ThreadState;
+import org.jlta.common.ThreadData;
+import org.jlta.common.ThreadData.ThreadState;
+
 
 public class Tracking
 {
-  private static final Map<Integer, ThreadData> data = new ConcurrentHashMap<Integer, ThreadData>();
-
-  public static class ThreadData
-  {
-    private long elapsed;
-
-    public final StackTraceElement[] newThreadStack;
-    public long startTime;
-    public ThreadState state;
-    private final String name;
-
-    public enum ThreadState
-    {
-      ALLOCATED,
-      STARTED,
-      FINISHED;
-    }
-
-    public ThreadData(Thread t)
-    {
-      name = t.getName();
-      StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-      if ((stackTrace != null) && (stackTrace.length > 4))
-      {
-        newThreadStack = Arrays.copyOfRange(stackTrace, 3, stackTrace.length);
-      }
-      else
-      {
-        newThreadStack = new StackTraceElement[0];
-      }
-      state = ThreadState.ALLOCATED;
-    }
-
-    public void runEnter()
-    {
-      startTime = System.currentTimeMillis();
-      state = ThreadState.STARTED;
-    }
-
-    public void runReturn()
-    {
-      elapsed = System.currentTimeMillis() - startTime;
-      state = ThreadState.FINISHED;
-    }
-  }
+  public static final Map<Integer, ThreadData> data = new ConcurrentHashMap<Integer, ThreadData>();
 
   private static AtomicBoolean shutdownHookRequired = new AtomicBoolean(true);
 

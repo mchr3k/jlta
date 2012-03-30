@@ -1,4 +1,4 @@
-package org.jlta.dev;
+package org.dev.jlta;
 
 public class TryFinally
 {

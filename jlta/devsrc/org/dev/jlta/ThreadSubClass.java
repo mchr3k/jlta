@@ -1,4 +1,4 @@
-package org.jlta.dev;
+package org.dev.jlta;
 
 
 public class ThreadSubClass extends Thread
@@ -30,8 +30,12 @@ public class ThreadSubClass extends Thread
     }
   }
 
-  public static void main(String[] args)
+  public static void main(String[] args) throws InterruptedException
   {
-    new ThreadSubSubClass().start();
+    for (int ii = 0; ii < 300; ii++)
+    {
+      new ThreadSubSubClass().start();
+      Thread.sleep(5 * 1000);
+    }
   }
 }
