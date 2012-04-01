@@ -8,7 +8,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
   private static final long serialVersionUID = 1L;
 
   public final StackTraceElement[] newThreadStack;
-  public final String name;
+  public String name;
 
   public long startTime;
   public ThreadData.ThreadState state;
@@ -36,8 +36,9 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
     state = ThreadState.ALLOCATED;
   }
 
-  public void runEnter()
+  public void runEnter(Thread t)
   {
+    name = t.getName();
     startTime = System.currentTimeMillis();
     state = ThreadState.STARTED;
   }

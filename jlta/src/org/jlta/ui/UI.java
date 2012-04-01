@@ -205,6 +205,7 @@ public class UI
       }
     });
 
+    disconnect();
     portText.forceFocus();
   }
 
@@ -223,6 +224,8 @@ public class UI
         {
           connectButton.setText("Disconnect");
           connectButton.setEnabled(true);
+          fetchButton.setEnabled(true);
+          resetButton.setEnabled(true);
           fetchButton.forceFocus();
         }
       });
@@ -248,6 +251,8 @@ public class UI
       {
         connectButton.setText("Connect");
         connectButton.setEnabled(true);
+        fetchButton.setEnabled(false);
+        resetButton.setEnabled(false);
       }
     });
   }

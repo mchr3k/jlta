@@ -61,7 +61,7 @@ public class Tracking
     {
       sEnterTracked.set(Boolean.TRUE);
       ThreadData threadData = data.get(t.hashCode());
-      threadData.runEnter();
+      threadData.runEnter(t);
     }
   }
 
