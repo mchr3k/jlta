@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.Date;
 import java.util.Map;
 
 import net.miginfocom.swt.MigLayout;
@@ -178,6 +179,7 @@ public class UI
     outputGroup.setLayoutData("grow,spanx 3,hmin 0,wmin 0");
     outputText = new Text(outputGroup, SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL | SWT.BORDER);
     outputText.setLayoutData("grow,hmin 0,wmin 0");
+    outputText.setEditable(false);
     outputText.addKeyListener(new KeyAdapter()
     {
       @Override
@@ -251,21 +253,27 @@ public class UI
         public void run()
         {
           StringBuilder str = new StringBuilder();
+          str.append(new Date().toString() + " >> Collected Thread Data:\n");
           str.append("\n");
-          str.append(" >> Collected Thread Data:\n");
-          str.append("\n");
-          for (ThreadData tdata : data.values())
+          if (data.size() == 0)
           {
-            str.append(tdata.name + " : " + tdata.state + "\n");
-            if (tdata.state == ThreadState.FINISHED)
+            str.append("  No data\n");
+          }
+          else
+          {
+            for (ThreadData tdata : data.values())
             {
-              str.append(" >> Runtime: " + tdata.elapsed + " ms\n");
+              str.append(tdata.name + " : " + tdata.state + "\n");
+              if (tdata.state == ThreadState.FINISHED)
+              {
+                str.append(" >> Runtime: " + tdata.elapsed + " ms\n");
+              }
+              for (StackTraceElement stackline : tdata.newThreadStack)
+              {
+                str.append(" > " + stackline.toString() + "\n");
+              }
+              str.append("\n");
             }
-            for (StackTraceElement stackline : tdata.newThreadStack)
-            {
-              str.append(" > " + stackline.toString() + "\n");
-            }
-            str.append("\n");
           }
 
           outputText.setText(str.toString());
@@ -285,6 +293,14 @@ public class UI
     {
       dataOut.writeObject("reset");
       dataOut.flush();
+      window.getDisplay().syncExec(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          outputText.setText(new Date().toString() + " - Data Reset!");
+        }
+      });
     }
     catch (IOException e)
     {
