@@ -34,7 +34,9 @@ public class ThreadSubClass extends Thread
   {
     for (int ii = 0; ii < 300; ii++)
     {
-      new ThreadSubSubClass().start();
+      Thread t = new ThreadSubSubClass();
+      t.setName("Foo");
+      t.start();
       Thread.sleep(5 * 1000);
     }
   }

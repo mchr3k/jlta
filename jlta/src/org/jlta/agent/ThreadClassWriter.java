@@ -35,6 +35,11 @@ public class ThreadClassWriter extends ClassVisitor
     {
       mv = new ThreadRunVisitor(mv, access, name, desc);
     }
+    if ("java/lang/Thread".equals(className) &&
+        "setName".equals(name))
+    {
+      mv = new ThreadSetNameVisitor(mv, access, name, desc);
+    }
     return mv;
   }
 
@@ -136,6 +141,36 @@ public class ThreadClassWriter extends ClassVisitor
       this.loadThis();
       this.invokeStatic(Type.getType(Tracking.class),
                         Method.getMethod("void runReturn (Thread)"));
+    }
+  }
+
+  public class ThreadSetNameVisitor extends GeneratorAdapter
+  {
+    public ThreadSetNameVisitor(MethodVisitor mv, int access, String name, String desc)
+    {
+      super(Opcodes.ASM4, mv, access, name, desc);
+    }
+
+    @Override
+    public void visitInsn(int opcode)
+    {
+      // Add a call to setName before the run instruction
+      switch (opcode)
+      {
+        case Opcodes.RETURN:
+        case Opcodes.IRETURN:
+        case Opcodes.FRETURN:
+        case Opcodes.ARETURN:
+        case Opcodes.LRETURN:
+        case Opcodes.DRETURN:
+        {
+          this.loadThis();
+          this.invokeStatic(Type.getType(Tracking.class),
+                            Method.getMethod("void setName (Thread)"));
+        }
+        break;
+      }
+      super.visitInsn(opcode);
     }
   }
 }
