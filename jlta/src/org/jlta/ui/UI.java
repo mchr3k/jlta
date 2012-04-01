@@ -4,8 +4,15 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import net.miginfocom.swt.MigLayout;
 
@@ -14,7 +21,9 @@ import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
@@ -24,6 +33,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.jlta.common.ThreadData;
+import org.jlta.common.ThreadData.StackTraceArrayWrap;
 import org.jlta.common.ThreadData.ThreadState;
 
 public class UI
@@ -179,7 +189,10 @@ public class UI
     outputGroup.setLayoutData("grow,spanx 3,hmin 0,wmin 0");
     outputText = new Text(outputGroup, SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL | SWT.BORDER);
     outputText.setLayoutData("grow,hmin 0,wmin 0");
+    Color textBackground = outputText.getBackground();
     outputText.setEditable(false);
+    // Reset background to color used before we set editable false
+    outputText.setBackground(textBackground);
     outputText.addKeyListener(new KeyAdapter()
     {
       @Override
@@ -210,6 +223,7 @@ public class UI
         {
           connectButton.setText("Disconnect");
           connectButton.setEnabled(true);
+          fetchButton.forceFocus();
         }
       });
       state = State.CONNECTED;
@@ -246,45 +260,95 @@ public class UI
       dataOut.writeObject("fetch");
       dataOut.flush();
 
-      final Map<Integer, ThreadData> data = (Map<Integer, ThreadData>)dataIn.readObject();
-      window.getDisplay().syncExec(new Runnable()
-      {
-        @Override
-        public void run()
-        {
-          StringBuilder str = new StringBuilder();
-          str.append(new Date().toString() + " >> Collected Thread Data:\n");
-          str.append("\n");
-          if (data.size() == 0)
-          {
-            str.append("  No data\n");
-          }
-          else
-          {
-            for (ThreadData tdata : data.values())
-            {
-              str.append(tdata.name + " : " + tdata.state + "\n");
-              if (tdata.state == ThreadState.FINISHED)
-              {
-                str.append(" >> Runtime: " + tdata.elapsed + " ms\n");
-              }
-              for (StackTraceElement stackline : tdata.newThreadStack)
-              {
-                str.append(" > " + stackline.toString() + "\n");
-              }
-              str.append("\n");
-            }
-          }
-
-          outputText.setText(str.toString());
-        }
-      });
+      Map<Integer, ThreadData> data = (Map<Integer, ThreadData>)dataIn.readObject();
+      processData(data);
     }
     catch (Exception e)
     {
       disconnect();
       error(e);
     }
+  }
+
+  private void processData(Map<Integer, ThreadData> data)
+  {
+    final Map<StackTraceArrayWrap, List<ThreadData>> groupedData = new HashMap<StackTraceArrayWrap, List<ThreadData>>();
+    for (ThreadData tdata : data.values())
+    {
+      StackTraceArrayWrap stackWrap = new StackTraceArrayWrap(tdata.newThreadStack);
+      List<ThreadData> threadData = groupedData.get(stackWrap);
+      if (threadData == null)
+      {
+        threadData = new ArrayList<ThreadData>();
+        groupedData.put(stackWrap, threadData);
+      }
+      threadData.add(tdata);
+    }
+
+    final Map<StackTraceArrayWrap, List<ThreadData>> sortedGroupedData = new TreeMap<StackTraceArrayWrap, List<ThreadData>>(new Comparator<StackTraceArrayWrap>()
+    {
+      @Override
+      public int compare(StackTraceArrayWrap o1, StackTraceArrayWrap o2)
+      {
+        int o1Count = groupedData.get(o1).size();
+        int o2Count = groupedData.get(o2).size();
+        if (o1Count < o2Count)
+        {
+          return 1;
+        }
+        else if (o1Count > o2Count)
+        {
+          return -1;
+        }
+        else
+        {
+          return 0;
+        }
+      }
+    });
+    sortedGroupedData.putAll(groupedData);
+
+    window.getDisplay().syncExec(new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        StringBuilder str = new StringBuilder();
+        str.append(new Date().toString() + " >> Collected Thread Data:\n");
+        str.append("\n");
+        if (groupedData.size() == 0)
+        {
+          str.append("  No data\n");
+        }
+        else
+        {
+          for (Entry<StackTraceArrayWrap, List<ThreadData>> entry : sortedGroupedData.entrySet())
+          {
+            StackTraceElement[] stack = entry.getKey().stack;
+            List<ThreadData> threads = entry.getValue();
+            Collections.sort(threads);
+            str.append(threads.size() + " threads:\n");
+            for (ThreadData tdata : threads)
+            {
+              str.append(" > " + tdata.name + " : " + tdata.state);
+              if (tdata.state == ThreadState.FINISHED)
+              {
+                str.append(" (Runtime: " + tdata.elapsed + " ms)");
+              }
+              str.append("\n");
+            }
+            str.append("Stack:\n");
+            for (StackTraceElement stackline : stack)
+            {
+              str.append(" > " + stackline.toString() + "\n");
+            }
+            str.append("\n");
+          }
+        }
+
+        outputText.setText(str.toString());
+      }
+    });
   }
 
   private void resetData()
@@ -325,7 +389,8 @@ public class UI
 
   public void open()
   {
-    window.open();
+    placeDialogInCenter(window.getDisplay().getPrimaryMonitor().getBounds(),
+                        window);
     Display display = Display.getDefault();
     while (!window.isDisposed())
     {
@@ -333,6 +398,18 @@ public class UI
         display.sleep();
     }
     display.dispose();
+  }
+
+  public static void placeDialogInCenter(Rectangle parentSize, Shell shell)
+  {
+    Rectangle mySize = shell.getBounds();
+
+    int locationX, locationY;
+    locationX = (parentSize.width - mySize.width) / 2 + parentSize.x;
+    locationY = (parentSize.height - mySize.height) / 2 + parentSize.y;
+
+    shell.setLocation(new Point(locationX, locationY));
+    shell.open();
   }
 
   public static void main(String[] args)
