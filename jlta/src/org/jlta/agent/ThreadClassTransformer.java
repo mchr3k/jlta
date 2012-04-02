@@ -82,8 +82,41 @@ public class ThreadClassTransformer implements ClassFileTransformer
       if (isThreadClass &&
           !className.startsWith("org/jlta"))
       {
+        System.out.println("Transforming: " + className);
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES |
-                                         ClassWriter.COMPUTE_MAXS);
+                                         ClassWriter.COMPUTE_MAXS)
+        {
+          @Override
+          protected String getCommonSuperClass(String type1, String type2)
+          {
+            Class<?> c, d;
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            if (classLoader == null)
+            {
+              classLoader = getClass().getClassLoader();
+            }
+            try {
+                c = Class.forName(type1.replace('/', '.'), false, classLoader);
+                d = Class.forName(type2.replace('/', '.'), false, classLoader);
+            } catch (Exception e) {
+                throw new RuntimeException(e.toString());
+            }
+            if (c.isAssignableFrom(d)) {
+                return type1;
+            }
+            if (d.isAssignableFrom(c)) {
+                return type2;
+            }
+            if (c.isInterface() || d.isInterface()) {
+                return "java/lang/Object";
+            } else {
+                do {
+                    c = c.getSuperclass();
+                } while (!c.isAssignableFrom(d));
+                return c.getName().replace('.', '/');
+            }
+          }
+        };
         ClassVisitor cv = new ThreadClassWriter(cw, className);
         cr.accept(cv, ClassReader.EXPAND_FRAMES);
         classfileBuffer = cw.toByteArray();

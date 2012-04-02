@@ -8,6 +8,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.AdviceAdapter;
 import org.objectweb.asm.commons.GeneratorAdapter;
+import org.objectweb.asm.commons.JSRInlinerAdapter;
 import org.objectweb.asm.commons.Method;
 
 public class ThreadClassWriter extends ClassVisitor
@@ -25,20 +26,23 @@ public class ThreadClassWriter extends ClassVisitor
                                    String signature, String[] exceptions)
   {
     MethodVisitor mv = super.visitMethod(access, name, desc, signature, exceptions);
-    if ("java/lang/Thread".equals(className) &&
-        "<init>".equals(name))
+    // Fix any legacy JSR/RET bytecode
+    mv = new JSRInlinerAdapter(mv, access, name, desc, signature, exceptions);
+    if ("java/lang/Thread".equals(className))
     {
-      mv = new ThreadConstructorVisitor(mv, access, name, desc);
+      if ("<init>".equals(name))
+      {
+        mv = new ThreadConstructorVisitor(mv, access, name, desc);
+      }
+      else if ("setName".equals(name))
+      {
+        mv = new ThreadSetNameVisitor(mv, access, name, desc);
+      }
     }
-    if ("run".equals(name) &&
-        "()V".equals(desc))
+    else if ("run".equals(name) &&
+             "()V".equals(desc))
     {
       mv = new ThreadRunVisitor(mv, access, name, desc);
-    }
-    if ("java/lang/Thread".equals(className) &&
-        "setName".equals(name))
-    {
-      mv = new ThreadSetNameVisitor(mv, access, name, desc);
     }
     return mv;
   }
@@ -80,7 +84,6 @@ public class ThreadClassWriter extends ClassVisitor
       tryStart = this.newLabel();
       tryEnd = this.newLabel();
       finallyStart = this.newLabel();
-      mv.visitTryCatchBlock(tryStart, tryEnd, finallyStart, null);
       mv.visitLabel(tryStart);
 
       // Add tracking call to start of try block
@@ -112,6 +115,12 @@ public class ThreadClassWriter extends ClassVisitor
     @Override
     public void visitMaxs(int maxStack, int maxLocals)
     {
+      // Visit try/finally block at the end of the method to ensure
+      // it ends up at the end of the exception table. Otherwise we
+      // will catch all exceptions and throw them outside the scope
+      // of the intended catch blocks.
+      mv.visitTryCatchBlock(tryStart, tryEnd, finallyStart, null);
+
       // Jump to end of finally block
       Label finallyEnd = this.newLabel();
       this.goTo(finallyEnd);

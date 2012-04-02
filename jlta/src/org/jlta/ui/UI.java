@@ -145,6 +145,7 @@ public class UI
       @Override
       public void widgetSelected(SelectionEvent arg0)
       {
+        fetchButton.setEnabled(false);
         Runnable r = new Runnable()
         {
           @Override
@@ -352,6 +353,7 @@ public class UI
         }
 
         outputText.setText(str.toString());
+        fetchButton.setEnabled(true);
       }
     });
   }

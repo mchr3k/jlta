@@ -1,5 +1,7 @@
 package org.dev.jlta;
 
+import java.io.IOException;
+
 
 public class ThreadSubClass extends Thread
 {
@@ -11,14 +13,27 @@ public class ThreadSubClass extends Thread
   @Override
   public void run()
   {
-    try
-    {
-      System.out.println("Running...");
-    }
-    finally
-    {
-      System.out.println("Ending...");
-    }
+//    try
+//    {
+//      Tracking.runEnter(this);
+      try
+      {
+        System.out.println("Throw...");
+        if (System.currentTimeMillis() > 0)
+          throw new IOException();
+      }
+      catch (IOException ex)
+      {
+        System.out.println("Catch...");
+        return;
+      }
+      System.out.println("Bar");
+      return;
+//    }
+//    finally
+//    {
+//      Tracking.runReturn(this);
+//    }
   }
 
   public static class ThreadSubSubClass extends ThreadSubClass
