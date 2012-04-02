@@ -82,7 +82,6 @@ public class ThreadClassTransformer implements ClassFileTransformer
       if (isThreadClass &&
           !className.startsWith("org/jlta"))
       {
-        System.out.println("Transforming: " + className);
         ClassWriter cw = new ClassWriter(ClassWriter.COMPUTE_FRAMES |
                                          ClassWriter.COMPUTE_MAXS)
         {

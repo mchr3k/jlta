@@ -146,6 +146,7 @@ public class UI
       public void widgetSelected(SelectionEvent arg0)
       {
         fetchButton.setEnabled(false);
+        resetButton.setEnabled(false);
         Runnable r = new Runnable()
         {
           @Override
@@ -279,6 +280,7 @@ public class UI
   private void processData(Map<Integer, ThreadData> data)
   {
     final Map<StackTraceArrayWrap, List<ThreadData>> groupedData = new HashMap<StackTraceArrayWrap, List<ThreadData>>();
+    int threadCount = 0;
     for (ThreadData tdata : data.values())
     {
       StackTraceArrayWrap stackWrap = new StackTraceArrayWrap(tdata.newThreadStack);
@@ -289,6 +291,7 @@ public class UI
         groupedData.put(stackWrap, threadData);
       }
       threadData.add(tdata);
+      threadCount++;
     }
 
     final Map<StackTraceArrayWrap, List<ThreadData>> sortedGroupedData = new TreeMap<StackTraceArrayWrap, List<ThreadData>>(new Comparator<StackTraceArrayWrap>()
@@ -308,25 +311,32 @@ public class UI
         }
         else
         {
-          return 0;
+          if (groupedData.get(o1).hashCode() < groupedData.get(o2).hashCode())
+          {
+            return 1;
+          }
+          else
+          {
+            return -1;
+          }
         }
       }
     });
     sortedGroupedData.putAll(groupedData);
 
+    final int finalThreadCount = threadCount;
     window.getDisplay().syncExec(new Runnable()
     {
       @Override
       public void run()
       {
         StringBuilder str = new StringBuilder();
+
         str.append(new Date().toString() + " >> Collected Thread Data:\n");
         str.append("\n");
-        if (groupedData.size() == 0)
-        {
-          str.append("  No data\n");
-        }
-        else
+        str.append("Number of threads: " + finalThreadCount + "\n");
+        str.append("\n");
+        if (groupedData.size() > 0)
         {
           for (Entry<StackTraceArrayWrap, List<ThreadData>> entry : sortedGroupedData.entrySet())
           {
@@ -341,6 +351,10 @@ public class UI
               {
                 str.append(" (Runtime: " + tdata.elapsed + " ms)");
               }
+              if ((tdata.context != null) && (tdata.context.length() > 0))
+              {
+                str.append(" (" + tdata.context + ")");
+              }
               str.append("\n");
             }
             str.append("Stack:\n");
@@ -354,6 +368,8 @@ public class UI
 
         outputText.setText(str.toString());
         fetchButton.setEnabled(true);
+        resetButton.setEnabled(true);
+        fetchButton.forceFocus();
       }
     });
   }

@@ -1,6 +1,8 @@
 package org.jlta.common;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.Arrays;
 
 public class ThreadData implements Serializable, Comparable<ThreadData>
@@ -9,6 +11,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
 
   public final StackTraceElement[] newThreadStack;
   public volatile String name;
+  public final String context;
 
   public long startTime = 0;
   public ThreadData.ThreadState state;
@@ -33,6 +36,44 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
     {
       newThreadStack = new StackTraceElement[0];
     }
+    String context = "";
+    if ((t.getContextClassLoader().getClass() != null) &&
+         t.getContextClassLoader().getClass().getName().equals("org.apache.catalina.loader.WebappClassLoader"))
+    {
+      ClassLoader contextCL = t.getContextClassLoader();
+      Class<?> contextCLClass = contextCL.getClass();
+
+      try
+      {
+        Method getURLs = contextCLClass.getMethod("getURLs");
+        Object urlsObj = getURLs.invoke(contextCL);
+        if ((urlsObj != null) && (urlsObj instanceof URL[]))
+        {
+          URL[] urls = (URL[]) urlsObj;
+          for (URL url : urls)
+          {
+            String completeURL = url.toString();
+            int webappsIndex = completeURL.indexOf("webapps/");
+            if (webappsIndex > -1)
+            {
+              webappsIndex += "webapps/".length();
+              int webappEndIndex = completeURL.indexOf("/WEB-INF", webappsIndex + 1);
+              if (webappEndIndex > -1)
+              {
+                context = completeURL.substring(webappsIndex, webappEndIndex);
+                break;
+              }
+            }
+          }
+        }
+      }
+      catch (Exception ex)
+      {
+        // Ignore
+      }
+
+    }
+    this.context = context;
     state = ThreadState.ALLOCATED;
   }
 
