@@ -5,14 +5,18 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
 
 import net.miginfocom.swt.MigLayout;
 
@@ -25,12 +29,14 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 import org.jlta.common.ThreadData;
 import org.jlta.common.ThreadData.StackTraceArrayWrap;
@@ -51,6 +57,19 @@ public class UI
   private final Button fetchButton;
   private final Button resetButton;
 
+  private final Group filtersGroup;
+  private final Label threadStatesLabel;
+  private final Button allocatedButton;
+  private final Button startedButton;
+  private final Button finishedButton;
+  private final Label separatorLabel1;
+  private final Button ignoreNamedButton;
+  private final Combo contextsCombo;
+  private final Label contextsLabel;
+  private final Label separatorLabel2;
+  private final Button stackLimitButton;
+  private final Spinner stackLimitSpinner;
+
   private final Group outputGroup;
   private final Text outputText;
 
@@ -58,6 +77,8 @@ public class UI
   private Socket socket = null;
   private ObjectInputStream dataIn = null;
   private ObjectOutputStream dataOut = null;
+
+  private Map<Integer, ThreadData> data = new HashMap<Integer, ThreadData>();
 
   public enum State
   {
@@ -70,7 +91,7 @@ public class UI
     window = xiWindow;
     MigLayout mainLayout = new MigLayout("fill",
                                          "[][][grow]", // Columns
-                                         "[]0[grow]");  // Rows
+                                         "[]0[]0[grow]");  // Rows
     window.setLayout(mainLayout);
 
     connectGroup = new Group(window, SWT.NONE);
@@ -182,6 +203,60 @@ public class UI
       }
     });
 
+    filtersGroup = new Group(window, SWT.NONE);
+    filtersGroup.setText("Filters");
+    MigLayout filtersLayout = new MigLayout("fill",
+                                            "[][][][][][][][][][][][grow]",  // Columns
+                                            "[]"); // Rows
+    filtersGroup.setLayout(filtersLayout);
+    filtersGroup.setLayoutData("grow,spanx 3,wrap");
+    SelectionAdapter applyFilter = new SelectionAdapter()
+    {
+      @Override
+      public void widgetSelected(SelectionEvent arg0)
+      {
+        uiProcessData();
+      }
+    };
+    threadStatesLabel = new Label(filtersGroup, SWT.NONE);
+    threadStatesLabel.setText("States: ");
+    allocatedButton = new Button(filtersGroup, SWT.CHECK);
+    allocatedButton.setText("Allocated");
+    allocatedButton.addSelectionListener(applyFilter);
+    allocatedButton.setSelection(true);
+    startedButton = new Button(filtersGroup, SWT.CHECK);
+    startedButton.setText("Started");
+    startedButton.addSelectionListener(applyFilter);
+    startedButton.setSelection(true);
+    finishedButton = new Button(filtersGroup, SWT.CHECK);
+    finishedButton.setText("Finished");
+    finishedButton.addSelectionListener(applyFilter);
+    finishedButton.setSelection(true);
+    separatorLabel1 = new Label(filtersGroup, SWT.NONE);
+    separatorLabel1.setText("|");
+    ignoreNamedButton = new Button(filtersGroup, SWT.CHECK);
+    ignoreNamedButton.setText("Ignore Named Threads");
+    ignoreNamedButton.addSelectionListener(applyFilter);
+
+    contextsLabel = new Label(filtersGroup, SWT.NONE);
+    contextsLabel.setText("| Contexts: ");
+    contextsCombo = new Combo(filtersGroup, SWT.DROP_DOWN | SWT.READ_ONLY);
+    contextsCombo.setItems(new String[] {"All"});
+    contextsCombo.select(0);
+    contextsCombo.addSelectionListener(applyFilter);
+    contextsCombo.setLayoutData("width 80px,wmax 80px");
+    separatorLabel2 = new Label(filtersGroup, SWT.NONE);
+    separatorLabel2.setText("|");
+    stackLimitButton = new Button(filtersGroup, SWT.CHECK);
+    stackLimitButton.setText("Limit stack");
+    stackLimitButton.addSelectionListener(applyFilter);
+    stackLimitSpinner = new Spinner(filtersGroup, SWT.NONE);
+    stackLimitSpinner.setMinimum(1);
+    stackLimitSpinner.setIncrement(1);
+    stackLimitSpinner.setMaximum(100);
+    stackLimitSpinner.setSelection(1);
+    stackLimitSpinner.addSelectionListener(applyFilter);
+
     outputGroup = new Group(window, SWT.NONE);
     outputGroup.setText("Output");
     MigLayout outputLayout = new MigLayout("fill",
@@ -228,6 +303,13 @@ public class UI
           connectButton.setEnabled(true);
           fetchButton.setEnabled(true);
           resetButton.setEnabled(true);
+          allocatedButton.setEnabled(true);
+          startedButton.setEnabled(true);
+          finishedButton.setEnabled(true);
+          ignoreNamedButton.setEnabled(true);
+          contextsCombo.setEnabled(true);
+          stackLimitButton.setEnabled(true);
+          stackLimitSpinner.setEnabled(true);
           fetchButton.forceFocus();
         }
       });
@@ -255,6 +337,13 @@ public class UI
         connectButton.setEnabled(true);
         fetchButton.setEnabled(false);
         resetButton.setEnabled(false);
+        allocatedButton.setEnabled(false);
+        startedButton.setEnabled(false);
+        finishedButton.setEnabled(false);
+        ignoreNamedButton.setEnabled(false);
+        contextsCombo.setEnabled(false);
+        stackLimitButton.setEnabled(false);
+        stackLimitSpinner.setEnabled(false);
       }
     });
   }
@@ -267,8 +356,15 @@ public class UI
       dataOut.writeObject("fetch");
       dataOut.flush();
 
-      Map<Integer, ThreadData> data = (Map<Integer, ThreadData>)dataIn.readObject();
-      processData(data);
+      data = (Map<Integer, ThreadData>)dataIn.readObject();
+      window.getDisplay().syncExec(new Runnable()
+      {
+        @Override
+        public void run()
+        {
+          uiProcessData();
+        }
+      });
     }
     catch (Exception e)
     {
@@ -277,13 +373,80 @@ public class UI
     }
   }
 
-  private void processData(Map<Integer, ThreadData> data)
+  private void uiProcessData()
   {
+    final boolean allocated = allocatedButton.getSelection();
+    final boolean started = startedButton.getSelection();
+    final boolean finished = finishedButton.getSelection();
+    final boolean ignorenamed = ignoreNamedButton.getSelection();
+    final String context = contextsCombo.getItem(contextsCombo.getSelectionIndex());
+    final boolean stacklimit = stackLimitButton.getSelection();
+    final int stacklimitval = stackLimitSpinner.getSelection();
+    Runnable r = new Runnable()
+    {
+      @Override
+      public void run()
+      {
+        processData(allocated, started, finished,
+                    ignorenamed, context,
+                    stacklimit, stacklimitval);
+      }
+    };
+    Thread t = new Thread(r);
+    t.setName("Display Data");
+    t.setDaemon(true);
+    t.start();
+  }
+
+  private final Pattern unnamedThread = Pattern.compile("Thread-[\\d]+");
+
+  private void processData(boolean allocated,
+                           boolean started,
+                           boolean finished,
+                           boolean ignorenamed,
+                           final String context,
+                           boolean stacklimit,
+                           int stacklimitval)
+  {
+    final Set<String> contextsSet = new HashSet<String>();
     final Map<StackTraceArrayWrap, List<ThreadData>> groupedData = new HashMap<StackTraceArrayWrap, List<ThreadData>>();
-    int threadCount = 0;
+    int allThreadCount = 0;
+    int filteredThreadCount = 0;
     for (ThreadData tdata : data.values())
     {
-      StackTraceArrayWrap stackWrap = new StackTraceArrayWrap(tdata.newThreadStack);
+      allThreadCount++;
+      if ((tdata.context != null) &&
+          (tdata.context.trim().length() > 0))
+      {
+        contextsSet.add(tdata.context.trim());
+      }
+
+      if ((tdata.state == ThreadState.ALLOCATED) && !allocated)
+        continue;
+      if ((tdata.state == ThreadState.STARTED) && !started)
+        continue;
+      if ((tdata.state == ThreadState.FINISHED) && !finished)
+        continue;
+      if (ignorenamed &&
+          (tdata.name != null) &&
+          !unnamedThread.matcher(tdata.name).matches())
+      {
+        continue;
+      }
+      if (!"All".equals(context) &&
+          !context.equals(tdata.context))
+      {
+        continue;
+      }
+
+      StackTraceElement[] tstack = tdata.newThreadStack;
+      if (stacklimit &&
+          (tstack.length > stacklimitval))
+      {
+        tstack = Arrays.copyOfRange(tstack, 0, stacklimitval);
+      }
+
+      StackTraceArrayWrap stackWrap = new StackTraceArrayWrap(tstack);
       List<ThreadData> threadData = groupedData.get(stackWrap);
       if (threadData == null)
       {
@@ -291,7 +454,7 @@ public class UI
         groupedData.put(stackWrap, threadData);
       }
       threadData.add(tdata);
-      threadCount++;
+      filteredThreadCount++;
     }
 
     final Map<StackTraceArrayWrap, List<ThreadData>> sortedGroupedData = new TreeMap<StackTraceArrayWrap, List<ThreadData>>(new Comparator<StackTraceArrayWrap>()
@@ -324,17 +487,37 @@ public class UI
     });
     sortedGroupedData.putAll(groupedData);
 
-    final int finalThreadCount = threadCount;
+    final List<String> contextsList = new ArrayList<String>(contextsSet);
+    Collections.sort(contextsList);
+    contextsList.add(0, "All");
+
+    final String[] contextsArray = contextsList.toArray(new String[contextsList.size()]);
+
+    final int finalAllThreadCount = allThreadCount;
+    final int finalFilteredThreadCount = filteredThreadCount;
     window.getDisplay().syncExec(new Runnable()
     {
       @Override
       public void run()
       {
+        contextsCombo.setItems(contextsArray);
+        int selection = 0;
+        for (int ii = 0; ii < contextsArray.length; ii++)
+        {
+          if (contextsArray[ii].equals(context))
+          {
+            selection = ii;
+            break;
+          }
+        }
+        contextsCombo.select(selection);
+
         StringBuilder str = new StringBuilder();
 
-        str.append(new Date().toString() + " >> Collected Thread Data:\n");
+        str.append(new Date().toString() + " >> Thread Data:\n");
         str.append("\n");
-        str.append("Number of threads: " + finalThreadCount + "\n");
+        str.append("Total threads: " + finalAllThreadCount + "\n");
+        str.append("Displayed threads: " + finalFilteredThreadCount + "\n");
         str.append("\n");
         if (groupedData.size() > 0)
         {
@@ -438,8 +621,8 @@ public class UI
   public static void main(String[] args)
   {
     final Shell window = new Shell();
-    window.setSize(new Point(650, 600));
-    window.setMinimumSize(new Point(650, 600));
+    window.setSize(new Point(800, 700));
+    window.setMinimumSize(new Point(800, 700));
     window.setText("Java Live Thread Analyser");
 
     // Fill in UI
