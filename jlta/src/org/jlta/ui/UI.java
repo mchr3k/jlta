@@ -399,6 +399,7 @@ public class UI
   }
 
   private final Pattern unnamedThread = Pattern.compile("Thread-[\\d]+");
+  private final Pattern unnamedTimer = Pattern.compile("Timer-[\\d]+");
 
   private void processData(boolean allocated,
                            boolean started,
@@ -429,7 +430,8 @@ public class UI
         continue;
       if (ignorenamed &&
           (tdata.name != null) &&
-          !unnamedThread.matcher(tdata.name).matches())
+          !unnamedThread.matcher(tdata.name).matches() &&
+          !unnamedTimer.matcher(tdata.name).matches())
       {
         continue;
       }
