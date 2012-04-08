@@ -1,5 +1,6 @@
 package org.jlta.common;
 
+import java.io.File;
 import java.io.Serializable;
 import java.lang.reflect.Method;
 import java.net.URL;
@@ -53,11 +54,11 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
           for (URL url : urls)
           {
             String completeURL = url.toString();
-            int webappsIndex = completeURL.indexOf("webapps/");
+            int webappsIndex = completeURL.indexOf("webapps" + File.separator);
             if (webappsIndex > -1)
             {
-              webappsIndex += "webapps/".length();
-              int webappEndIndex = completeURL.indexOf("/WEB-INF", webappsIndex + 1);
+              webappsIndex += ("webapps" + File.separator).length();
+              int webappEndIndex = completeURL.indexOf(File.separator + "WEB-INF", webappsIndex + 1);
               if (webappEndIndex > -1)
               {
                 context = completeURL.substring(webappsIndex, webappEndIndex);

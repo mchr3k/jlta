@@ -18,7 +18,7 @@ public class Tracking
   {
     if (shutdownHookRequired.getAndSet(false))
     {
-      Runtime.getRuntime().addShutdownHook(new Thread()
+      Runtime.getRuntime().addShutdownHook(new Thread("JLTA - JVM Shutdown Hook")
       {
         @Override
         public void run()
