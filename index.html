@@ -19,6 +19,14 @@ title: Home
   </ul>
 </ul>
 
+<p>Add the following argument to your java process (this will listen on a random port which will be written to stdout).
+
+<pre>-javaagent:./path/to/jlta-agent.jar</pre>
+
+<p>Or, add the following argument to your java process (this will listen on a specific port - 8877 in this example).
+
+<pre>-javaagent:./path/to/jlta-agent.jar=8877</pre>
+
 <h3>The Problem</h3>
 
 <p>Understanding the internals of a running Java program is sometimes quite challenging. One of the
