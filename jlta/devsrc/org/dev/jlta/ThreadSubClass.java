@@ -2,7 +2,6 @@ package org.dev.jlta;
 
 import java.io.IOException;
 
-
 public class ThreadSubClass extends Thread
 {
   public ThreadSubClass()
@@ -13,27 +12,41 @@ public class ThreadSubClass extends Thread
   @Override
   public void run()
   {
-//    try
-//    {
-//      Tracking.runEnter(this);
-      try
-      {
-        System.out.println("Throw...");
-        if (System.currentTimeMillis() > 0)
-          throw new IOException();
-      }
-      catch (IOException ex)
-      {
-        System.out.println("Catch...");
-        return;
-      }
-      System.out.println("Bar");
+    // try
+    // {
+    // Tracking.runEnter(this);
+    try
+    {
+      System.out.println("Started...");
+      safeSleep(1000);
+      System.out.println("Throw...");
+      if (System.currentTimeMillis() > 0)
+        throw new IOException();
+    }
+    catch (IOException ex)
+    {
+      System.out.println("Catch...");
       return;
-//    }
-//    finally
-//    {
-//      Tracking.runReturn(this);
-//    }
+    }
+    System.out.println("Bar");
+    return;
+    // }
+    // finally
+    // {
+    // Tracking.runReturn(this);
+    // }
+  }
+
+  private void safeSleep(int i)
+  {
+    try
+    {
+      Thread.sleep(1000);
+    }
+    catch (InterruptedException e)
+    {
+      e.printStackTrace();
+    }
   }
 
   public static class ThreadSubSubClass extends ThreadSubClass

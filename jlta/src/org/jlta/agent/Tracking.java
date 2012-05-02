@@ -61,7 +61,10 @@ public class Tracking
     {
       sEnterTracked.set(Boolean.TRUE);
       ThreadData threadData = data.get(t.hashCode());
-      threadData.runEnter();
+      if (threadData != null)
+      {
+        threadData.runEnter();
+      }
     }
   }
 
@@ -80,7 +83,10 @@ public class Tracking
     {
       sReturnTracked.set(Boolean.TRUE);
       ThreadData threadData = data.get(t.hashCode());
-      threadData.runReturn();
+      if (threadData != null)
+      {
+        threadData.runReturn();
+      }
     }
   }
 

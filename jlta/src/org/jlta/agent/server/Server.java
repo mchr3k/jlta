@@ -82,6 +82,10 @@ public class Server extends Thread
             Map<Integer, ThreadData> copy = new HashMap<Integer, ThreadData>(Tracking.data);
             objOut.writeObject(copy);
             objOut.flush();
+            
+            // Reset the output stream to avoid caching any of the ThreadData objects
+            // which we just sent.
+            objOut.reset();
           }
           else
           {
