@@ -53,7 +53,10 @@ public class ServerCommunication {
             dataOut.flush();
 
             data = (Map<Integer, ThreadData>)dataIn.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
+            disconnect();
+            throw e;
+        }catch (ClassNotFoundException e) {
             disconnect();
             throw e;
         }

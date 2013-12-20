@@ -22,7 +22,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
   {
     ALLOCATED,
     STARTED,
-    FINISHED;
+    FINISHED
   }
 
   public ThreadData(Thread t)

@@ -10,16 +10,16 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.*;
+import org.jlta.common.IDataFormatter;
 import org.jlta.common.ServerCommunication;
-import org.jlta.common.StackTraceArrayWrap;
+import org.jlta.common.ServerDataProcessor;
 import org.jlta.common.ThreadData;
-import org.jlta.common.ThreadData.ThreadState;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.regex.Pattern;
+import java.util.Map;
 
 import static org.jlta.common.ServerCommunication.State;
 
@@ -57,9 +57,10 @@ public class UI
   private Map<Integer, ThreadData> data = new HashMap<Integer, ThreadData>();
 
   private ServerCommunication server = new ServerCommunication();
+    private IDataFormatter dataFormatter = new UIDataFormatter();
 
 
-  public UI(Shell xiWindow)
+    public UI(Shell xiWindow)
   {
     window = xiWindow;
     MigLayout mainLayout = new MigLayout("fill",
@@ -362,9 +363,6 @@ public class UI
     t.start();
   }
 
-  private final Pattern unnamedThread = Pattern.compile("Thread-[\\d]+");
-  private final Pattern unnamedTimer = Pattern.compile("Timer-[\\d]+");
-
   private void processData(boolean allocated,
                            boolean started,
                            boolean finished,
@@ -373,152 +371,28 @@ public class UI
                            boolean stacklimit,
                            int stacklimitval)
   {
-    final Set<String> contextsSet = new HashSet<String>();
-    final Map<StackTraceArrayWrap, List<ThreadData>> groupedData = new HashMap<StackTraceArrayWrap, List<ThreadData>>();
-    int allThreadCount = 0;
-    int filteredThreadCount = 0;
-    for (ThreadData tdata : server.getData().values())
-    {
-      allThreadCount++;
-      if ((tdata.context != null) &&
-          (tdata.context.trim().length() > 0))
-      {
-        contextsSet.add(tdata.context.trim());
-      }
-
-      if ((tdata.state == ThreadState.ALLOCATED) && !allocated)
-        continue;
-      if ((tdata.state == ThreadState.STARTED) && !started)
-        continue;
-      if ((tdata.state == ThreadState.FINISHED) && !finished)
-        continue;
-      if (ignorenamed &&
-          (tdata.name != null) &&
-          !unnamedThread.matcher(tdata.name).matches() &&
-          !unnamedTimer.matcher(tdata.name).matches())
-      {
-        continue;
-      }
-      if (!"All".equals(context) &&
-          !context.equals(tdata.context))
-      {
-        continue;
-      }
-
-      StackTraceElement[] tstack = tdata.newThreadStack;
-      if (stacklimit &&
-          (tstack.length > stacklimitval))
-      {
-        tstack = Arrays.copyOfRange(tstack, 0, stacklimitval);
-      }
-
-      StackTraceArrayWrap stackWrap = new StackTraceArrayWrap(tstack);
-      List<ThreadData> threadData = groupedData.get(stackWrap);
-      if (threadData == null)
-      {
-        threadData = new ArrayList<ThreadData>();
-        groupedData.put(stackWrap, threadData);
-      }
-      threadData.add(tdata);
-      filteredThreadCount++;
-    }
-
-    final Map<StackTraceArrayWrap, List<ThreadData>> sortedGroupedData = new TreeMap<StackTraceArrayWrap, List<ThreadData>>(new Comparator<StackTraceArrayWrap>()
-    {
-      @Override
-      public int compare(StackTraceArrayWrap o1, StackTraceArrayWrap o2)
-      {
-        int o1Count = groupedData.get(o1).size();
-        int o2Count = groupedData.get(o2).size();
-        if (o1Count < o2Count)
-        {
-          return 1;
-        }
-        else if (o1Count > o2Count)
-        {
-          return -1;
-        }
-        else
-        {
-          if (groupedData.get(o1).hashCode() < groupedData.get(o2).hashCode())
-          {
-            return 1;
-          }
-          else
-          {
-            return -1;
-          }
-        }
-      }
-    });
-    sortedGroupedData.putAll(groupedData);
-
-    final List<String> contextsList = new ArrayList<String>(contextsSet);
-    Collections.sort(contextsList);
-    contextsList.add(0, "All");
-
-    final String[] contextsArray = contextsList.toArray(new String[contextsList.size()]);
-
-    final int finalAllThreadCount = allThreadCount;
-    final int finalFilteredThreadCount = filteredThreadCount;
+    final ServerDataProcessor processor = new ServerDataProcessor(server.getData());
+    processor.processData(allocated,started,finished,ignorenamed,context,stacklimit,stacklimitval);
     window.getDisplay().syncExec(new Runnable()
     {
       @Override
       public void run()
       {
-        contextsCombo.setItems(contextsArray);
+        List<String> contextsList = processor.getContextsList();
+        contextsCombo.setItems(contextsList.toArray(new String[contextsList.size()]));
         int selection = 0;
-        for (int ii = 0; ii < contextsArray.length; ii++)
+        for (int ii = 0; ii < contextsList.size(); ii++)
         {
-          if (contextsArray[ii].equals(context))
+          if (contextsList.get(ii).equals(context))
           {
             selection = ii;
             break;
           }
         }
         contextsCombo.select(selection);
+        String message = dataFormatter.format(processor);
 
-        StringBuilder str = new StringBuilder();
-
-        str.append(new Date().toString() + " >> Thread Data:\n");
-        str.append("\n");
-        str.append("Total threads: " + finalAllThreadCount + "\n");
-        str.append("Displayed threads: " + finalFilteredThreadCount + "\n");
-        str.append("\n");
-        if (groupedData.size() > 0)
-        {
-          for (Entry<StackTraceArrayWrap, List<ThreadData>> entry : sortedGroupedData.entrySet())
-          {
-            StackTraceElement[] stack = entry.getKey().stack;
-            List<ThreadData> threads = entry.getValue();
-            Collections.sort(threads);
-            str.append(threads.size() + " threads:\n");
-            for (ThreadData tdata : threads)
-            {
-              str.append(" > " + tdata.name + " : " + tdata.state);
-                if(tdata.state == ThreadState.STARTED || tdata.state == ThreadState.FINISHED) {
-                    str.append(" (Started: " + new Date(tdata.startTime)+ ")");
-                }
-              if (tdata.state == ThreadState.FINISHED)
-              {
-                str.append(" (Runtime: " + tdata.elapsed + " ms)");
-              }
-              if ((tdata.context != null) && (tdata.context.length() > 0))
-              {
-                str.append(" (" + tdata.context + ")");
-              }
-              str.append("\n");
-            }
-            str.append("Stack:\n");
-            for (StackTraceElement stackline : stack)
-            {
-              str.append(" > " + stackline.toString() + "\n");
-            }
-            str.append("\n");
-          }
-        }
-
-        outputText.setText(str.toString());
+        outputText.setText(message);
         fetchButton.setEnabled(true);
         resetButton.setEnabled(true);
         fetchButton.forceFocus();
