@@ -1,6 +1,5 @@
-package org.jlta.ui;
+package org.jlta.formatters;
 
-import org.jlta.common.IDataFormatter;
 import org.jlta.common.ServerDataProcessor;
 import org.jlta.common.StackTraceArrayWrap;
 import org.jlta.common.ThreadData;
@@ -11,12 +10,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * UI data formatter
  */
 public class UIDataFormatter implements IDataFormatter {
     public String format(ServerDataProcessor processor){
         StringBuilder str = new StringBuilder();
 
-        str.append(new Date().toString()).append(" >> Thread Data:\n");
+        str.append(new Date().toString()).append(" >> Thread Data for JVM ").append(processor.getJvmId()).append(":\n");
         str.append("\n");
         str.append("Total threads: ").append(processor.getAllThreadCount()).append("\n");
         str.append("Displayed threads: ").append(processor.getFilteredThreadCount()).append("\n");

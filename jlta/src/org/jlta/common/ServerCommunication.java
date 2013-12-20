@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * //TODO
@@ -26,7 +24,7 @@ public class ServerCommunication {
     private ObjectInputStream dataIn = null;
     private ObjectOutputStream dataOut = null;
 
-    private Map<Integer, ThreadData> data = new HashMap<Integer, ThreadData>();
+    private TrackingData data = new TrackingData();
 
     public void connect(String host, int port) throws IOException {
         try {
@@ -52,7 +50,7 @@ public class ServerCommunication {
             dataOut.writeObject("fetch");
             dataOut.flush();
 
-            data = (Map<Integer, ThreadData>)dataIn.readObject();
+            data = (TrackingData)dataIn.readObject();
         } catch (IOException e) {
             disconnect();
             throw e;
@@ -72,7 +70,7 @@ public class ServerCommunication {
         }
     }
 
-    public Map<Integer, ThreadData> getData() {
+    public TrackingData getData() {
         return data;
     }
 

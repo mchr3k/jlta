@@ -1,16 +1,15 @@
 package org.jlta.agent;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.jlta.common.ThreadData;
 import org.jlta.common.ThreadData.ThreadState;
+import org.jlta.common.TrackingData;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 public class Tracking
 {
-  public static final Map<Integer, ThreadData> data = new ConcurrentHashMap<Integer, ThreadData>();
+  public static final TrackingData data = new TrackingData();
 
   private static AtomicBoolean shutdownHookRequired = new AtomicBoolean(true);
 
@@ -26,7 +25,7 @@ public class Tracking
           System.out.println();
           System.out.println(" >> Collected Thread Data:");
           System.out.println();
-          for (ThreadData tdata : data.values())
+          for (ThreadData tdata : data.threadsMap.values())
           {
             System.out.println(tdata.name + " : " + tdata.state);
             if (tdata.state == ThreadState.FINISHED)
@@ -43,7 +42,7 @@ public class Tracking
       });
     }
 
-    data.put(t.hashCode(), new ThreadData(t));
+    data.threadsMap.put(t.hashCode(), new ThreadData(t));
   }
 
   private static final ThreadLocal<Boolean> sEnterTracked = new ThreadLocal<Boolean>()
@@ -60,7 +59,7 @@ public class Tracking
     if (!sEnterTracked.get())
     {
       sEnterTracked.set(Boolean.TRUE);
-      ThreadData threadData = data.get(t.hashCode());
+      ThreadData threadData = data.threadsMap.get(t.hashCode());
       if (threadData != null)
       {
         threadData.runEnter();
@@ -82,7 +81,7 @@ public class Tracking
     if (!sReturnTracked.get())
     {
       sReturnTracked.set(Boolean.TRUE);
-      ThreadData threadData = data.get(t.hashCode());
+      ThreadData threadData = data.threadsMap.get(t.hashCode());
       if (threadData != null)
       {
         threadData.runReturn();
@@ -92,7 +91,7 @@ public class Tracking
 
   public static void setName(Thread t)
   {
-    ThreadData threadData = data.get(t.hashCode());
+    ThreadData threadData = data.threadsMap.get(t.hashCode());
     threadData.name = t.getName();
   }
 

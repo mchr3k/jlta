@@ -11,14 +11,16 @@ public class ServerDataProcessor {
     private static final Pattern unnamedTimer = Pattern.compile("Timer-[\\d]+");
 
     private final Map<Integer, ThreadData> data;
+    private final TrackingData trackingData;
 
     private int allThreadCount;
     private int filteredThreadCount;
     private List<String> contextsList;
     private Map<StackTraceArrayWrap, List<ThreadData>> sortedGroupedData;
 
-    public ServerDataProcessor(Map<Integer, ThreadData> data) {
-        this.data = data;
+    public ServerDataProcessor(TrackingData trackingData) {
+        this.trackingData = trackingData;
+        this.data = trackingData.threadsMap;
     }
 
     public void processData(boolean allocated,
@@ -118,5 +120,9 @@ public class ServerDataProcessor {
 
     public Map<StackTraceArrayWrap, List<ThreadData>> getSortedGroupedData() {
         return sortedGroupedData;
+    }
+
+    public String getJvmId() {
+        return trackingData.jvmId;
     }
 }

@@ -10,10 +10,11 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.*;
-import org.jlta.common.IDataFormatter;
+import org.jlta.formatters.IDataFormatter;
 import org.jlta.common.ServerCommunication;
 import org.jlta.common.ServerDataProcessor;
 import org.jlta.common.ThreadData;
+import org.jlta.formatters.UIDataFormatter;
 
 import java.io.IOException;
 import java.util.Date;
