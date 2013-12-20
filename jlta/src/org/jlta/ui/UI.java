@@ -1,25 +1,6 @@
 package org.jlta.ui;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.regex.Pattern;
-
 import net.miginfocom.swt.MigLayout;
-
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -28,19 +9,19 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.widgets.Button;
-import org.eclipse.swt.widgets.Combo;
-import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Group;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.MessageBox;
-import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Spinner;
-import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.*;
+import org.jlta.common.ServerCommunication;
+import org.jlta.common.StackTraceArrayWrap;
 import org.jlta.common.ThreadData;
-import org.jlta.common.ThreadData.StackTraceArrayWrap;
 import org.jlta.common.ThreadData.ThreadState;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
+
+import static org.jlta.common.ServerCommunication.State;
 
 public class UI
 {
@@ -73,18 +54,10 @@ public class UI
   private final Group outputGroup;
   private final Text outputText;
 
-  private State state = State.DISCONNECTED;
-  private Socket socket = null;
-  private ObjectInputStream dataIn = null;
-  private ObjectOutputStream dataOut = null;
-
   private Map<Integer, ThreadData> data = new HashMap<Integer, ThreadData>();
 
-  public enum State
-  {
-    DISCONNECTED,
-    CONNECTED;
-  }
+  private ServerCommunication server = new ServerCommunication();
+
 
   public UI(Shell xiWindow)
   {
@@ -119,7 +92,7 @@ public class UI
       @Override
       public void widgetSelected(SelectionEvent arg0)
       {
-        if (state == State.DISCONNECTED)
+        if (server.getState() == State.DISCONNECTED)
         {
           connectButton.setText("Connecting...");
           connectButton.setEnabled(false);
@@ -291,9 +264,7 @@ public class UI
     try
     {
       int port = Integer.parseInt(portstr);
-      socket = new Socket(host, port);
-      dataOut = new ObjectOutputStream(socket.getOutputStream());
-      dataIn = new ObjectInputStream(socket.getInputStream());
+      server.connect(host, port);
       window.getDisplay().syncExec(new Runnable()
       {
         @Override
@@ -313,7 +284,6 @@ public class UI
           fetchButton.forceFocus();
         }
       });
-      state = State.CONNECTED;
     }
     catch (Exception e)
     {
@@ -324,10 +294,7 @@ public class UI
 
   private void disconnect()
   {
-    state = State.DISCONNECTED;
-    socket = null;
-    dataIn = null;
-    dataOut = null;
+    server.disconnect();
     window.getDisplay().syncExec(new Runnable()
     {
       @Override
@@ -348,15 +315,11 @@ public class UI
     });
   }
 
-  @SuppressWarnings("unchecked")
   private void fetchData()
   {
     try
     {
-      dataOut.writeObject("fetch");
-      dataOut.flush();
-
-      data = (Map<Integer, ThreadData>)dataIn.readObject();
+      server.fetch();
       window.getDisplay().syncExec(new Runnable()
       {
         @Override
@@ -372,6 +335,7 @@ public class UI
       error(e);
     }
   }
+
 
   private void uiProcessData()
   {
@@ -413,7 +377,7 @@ public class UI
     final Map<StackTraceArrayWrap, List<ThreadData>> groupedData = new HashMap<StackTraceArrayWrap, List<ThreadData>>();
     int allThreadCount = 0;
     int filteredThreadCount = 0;
-    for (ThreadData tdata : data.values())
+    for (ThreadData tdata : server.getData().values())
     {
       allThreadCount++;
       if ((tdata.context != null) &&
@@ -532,6 +496,9 @@ public class UI
             for (ThreadData tdata : threads)
             {
               str.append(" > " + tdata.name + " : " + tdata.state);
+                if(tdata.state == ThreadState.STARTED || tdata.state == ThreadState.FINISHED) {
+                    str.append(" (Started: " + new Date(tdata.startTime)+ ")");
+                }
               if (tdata.state == ThreadState.FINISHED)
               {
                 str.append(" (Runtime: " + tdata.elapsed + " ms)");
@@ -563,8 +530,7 @@ public class UI
   {
     try
     {
-      dataOut.writeObject("reset");
-      dataOut.flush();
+      server.reset();
       window.getDisplay().syncExec(new Runnable()
       {
         @Override
