@@ -1,5 +1,6 @@
 package org.jlta.common;
 
+import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -10,12 +11,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.util.Map.Entry;
 
 /**
- * //TODO
- *
- * @author: akabelytskyi
- * @since: 12.1
+ * Wrapper object for all data capture on the server
  */
-public class TrackingData {
+public class TrackingData implements Serializable {
     public final String jvmId;
     public final Map<Integer, ThreadData> threadsMap;
 

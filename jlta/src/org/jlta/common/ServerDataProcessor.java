@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
  * Performs postprocessing of server data
  */
 public class ServerDataProcessor {
+    public static final String CONTEXT_ALL = "All";
+
     private static final Pattern unnamedThread = Pattern.compile("Thread-[\\d]+");
     private static final Pattern unnamedTimer = Pattern.compile("Timer-[\\d]+");
 
@@ -57,7 +59,7 @@ public class ServerDataProcessor {
             {
                 continue;
             }
-            if (!"All".equals(context) &&
+            if (!CONTEXT_ALL.equals(context) &&
                     !context.equals(tdata.context))
             {
                 continue;

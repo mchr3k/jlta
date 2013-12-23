@@ -15,7 +15,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
   public final String context;
 
   public long startTime = 0;
-  public ThreadData.ThreadState state;
+  public ThreadState state;
   public volatile long elapsed = 0;
 
   public enum ThreadState

@@ -70,6 +70,15 @@ public class ServerCommunication {
         }
     }
 
+    public void prune() throws IOException {
+        try {
+            dataOut.writeObject("prune");
+            dataOut.flush();
+        } catch (IOException e) {
+            disconnect();
+            throw e;
+        }
+    }
     public TrackingData getData() {
         return data;
     }
