@@ -83,6 +83,11 @@ public class ServerCommunication {
         return data;
     }
 
+    public void setData(TrackingData data) {
+        if(data!=null)
+            this.data = data;
+    }
+
     public State getState() {
         return state;
     }

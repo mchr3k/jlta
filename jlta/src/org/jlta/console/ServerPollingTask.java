@@ -5,7 +5,7 @@ import org.jlta.common.ServerDataProcessor;
 import org.jlta.common.ThreadData;
 import org.jlta.common.TrackingData;
 import org.jlta.formatters.IDataFormatter;
-import org.jlta.formatters.UIDataFormatter;
+import org.jlta.formatters.OneLineFormatter;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -41,7 +41,7 @@ public class ServerPollingTask{
         this.maxRetryCount = retryCount;
 
         server = new ServerCommunication();
-        formatter = new UIDataFormatter();
+        formatter = new OneLineFormatter();
     }
 
     public void poll() {

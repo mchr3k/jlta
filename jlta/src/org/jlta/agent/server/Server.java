@@ -88,8 +88,6 @@ public class Server extends Thread
           else if ("prune".equals(message))
           {
               Tracking.data.prune();
-              System.out.println("## (JLTA) ## Data pruned. FINISHED thread data removed - " +
-                      new Date().toString());
           }
           else
           {

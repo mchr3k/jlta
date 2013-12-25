@@ -41,8 +41,8 @@ public class Tracking
         }
       });
     }
-
-    data.threadsMap.put(t.hashCode(), new ThreadData(t));
+    ThreadData td = new ThreadData(t);
+    data.threadsMap.put(td.id, td);
   }
 
   private static final ThreadLocal<Boolean> sEnterTracked = new ThreadLocal<Boolean>()

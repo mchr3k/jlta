@@ -10,13 +10,17 @@ import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.*;
-import org.jlta.formatters.IDataFormatter;
 import org.jlta.common.ServerCommunication;
 import org.jlta.common.ServerDataProcessor;
 import org.jlta.common.ThreadData;
+import org.jlta.common.TrackingData;
+import org.jlta.formatters.IDataFormatter;
+import org.jlta.formatters.OneLineFormatter;
 import org.jlta.formatters.UIDataFormatter;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -38,6 +42,7 @@ public class UI
   private final Group actionsGroup;
   private final Button fetchButton;
   private final Button resetButton;
+  private final Button loadButton;
 
   private final Group filtersGroup;
   private final Label threadStatesLabel;
@@ -134,6 +139,11 @@ public class UI
     resetButton = new Button(actionsGroup, SWT.NONE);
     resetButton.setText("Reset Data on Agent");
     resetButton.setLayoutData("growy");
+
+    loadButton = new Button(actionsGroup, SWT.NONE);
+    loadButton.setText("Load log");
+    loadButton.setLayoutData("growy");
+
     actionsGroup.setLayoutData("grow,wrap");
 
     fetchButton.addSelectionListener(new SelectionAdapter()
@@ -177,6 +187,33 @@ public class UI
         t.start();
       }
     });
+
+      loadButton.addSelectionListener(new SelectionAdapter()
+      {
+          @Override
+          public void widgetSelected(SelectionEvent arg0)
+          {
+              FileDialog fd = new FileDialog(window);
+              fd.setText("Open log");
+              String[] filterExt = { "*.log", "*.*" };
+              fd.setFilterExtensions(filterExt);
+              final String fileName = fd.open();
+              if(fileName!=null){
+                  Runnable r = new Runnable()
+                  {
+                      @Override
+                      public void run()
+                      {
+                          loadLog(fileName);
+                      }
+                  };
+                  Thread t = new Thread(r);
+                  t.setName("Load log Thread");
+                  t.setDaemon(true);
+                  t.start();
+              }
+          }
+      });
 
     filtersGroup = new Group(window, SWT.NONE);
     filtersGroup.setText("Filters");
@@ -261,7 +298,7 @@ public class UI
     portText.forceFocus();
   }
 
-  private void connect(String host, String portstr)
+    private void connect(String host, String portstr)
   {
     try
     {
@@ -394,12 +431,55 @@ public class UI
         String message = dataFormatter.format(processor);
 
         outputText.setText(message);
-        fetchButton.setEnabled(true);
-        resetButton.setEnabled(true);
-        fetchButton.forceFocus();
+        if(server.getState() == State.CONNECTED) {
+          fetchButton.setEnabled(true);
+          resetButton.setEnabled(true);
+          fetchButton.forceFocus();
+        }
       }
     });
   }
+
+  private void loadLog(String file){
+      FileInputStream fis = null;
+      try {
+          fis = new FileInputStream(file);
+          OneLineFormatter loader = new OneLineFormatter();
+          TrackingData data = loader.load(new InputStreamReader(fis));
+          server.disconnect();
+          server.setData(data);
+          window.getDisplay().syncExec(new Runnable()
+          {
+              @Override
+              public void run()
+              {
+                  connectButton.setText("Connect");
+                  connectButton.setEnabled(true);
+                  fetchButton.setEnabled(false);
+                  resetButton.setEnabled(false);
+
+                  allocatedButton.setEnabled(true);
+                  startedButton.setEnabled(true);
+                  finishedButton.setEnabled(true);
+                  ignoreNamedButton.setEnabled(true);
+                  contextsCombo.setEnabled(true);
+                  stackLimitButton.setEnabled(true);
+                  stackLimitSpinner.setEnabled(true);
+                  uiProcessData();
+              }
+          });
+      } catch (IOException e) {
+          error(e);
+      } finally {
+          try {
+              if (fis != null) {
+                  fis.close();
+              }
+          } catch (IOException ignored) {
+          }
+      }
+  }
+
 
   private void resetData()
   {

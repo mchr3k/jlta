@@ -17,6 +17,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
   public long startTime = 0;
   public ThreadState state;
   public volatile long elapsed = 0;
+  public int id;
 
   public enum ThreadState
   {
@@ -27,6 +28,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
 
   public ThreadData(Thread t)
   {
+    id = System.identityHashCode(t);
     name = t.getName();
     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
     if ((stackTrace != null) && (stackTrace.length > 4))
@@ -78,7 +80,17 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
     state = ThreadState.ALLOCATED;
   }
 
-  public void runEnter()
+    public ThreadData(int id, String name, StackTraceElement[] newThreadStack, String context, long startTime, long elapsed, ThreadState state) {
+        this.newThreadStack = newThreadStack;
+        this.context = context;
+        this.name = name;
+        this.startTime = startTime;
+        this.state = state;
+        this.elapsed = elapsed;
+        this.id = id;
+    }
+
+    public void runEnter()
   {
     startTime = System.currentTimeMillis();
     state = ThreadState.STARTED;
