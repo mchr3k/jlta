@@ -58,13 +58,27 @@
     </jarjar>
     <copy file="./build/jars/jlta-agent.jar" todir="./lib/" />
 
+    <!-- Console -->
+    <jar jarfile="./build/jars/jlta-console.jar">
+      <manifest>
+      	<attribute name="Main-Class" value="org.jlta.console.Console"/>
+        <attribute name="Class-Path" value="." />
+      </manifest>
+
+      <fileset dir="./build/classes" includes="**/common/**/*.class" />
+      <fileset dir="./build/classes" includes="**/console/**/*.class" />
+      <fileset dir="./build/classes" includes="**/formatters/**/*.class" />
+
+      <zipfileset excludes="META-INF/*.MF" src="./lib/args4j-2.0.25.jar"/>
+    </jar>
+    <copy file="./build/jars/jlta-console.jar" todir="./lib/" />
 
     <!-- UI (Cross platform SWT Jar (Windows/Linux)) -->
     <swtjar jarfile="./build/jars/jlta.jar"
 	        targetmainclass="org.jlta.ui.UI"
 	        swtversion="3.6.2">
       <!-- JLTA classes -->
-      <fileset dir="./build/classes" includes="**/*.class" excludes="**/agent/*.class" />
+      <fileset dir="./build/classes" includes="**/*.class" excludes="**/agent/*.class, **/console/*.class" />
 
       <!-- Required Jars -->
       <zipfileset excludes="META-INF/*.MF" src="lib/miglayout-3.7.3.1-swt.jar"/>
@@ -79,7 +93,7 @@
 	        targetmainclass="org.jlta.ui.UI"
 	        swtversion="3.6.2">
       <!-- JLTA classes -->
-      <fileset dir="./build/classes" includes="**/*.class" excludes="**/agent/*.class" />
+      <fileset dir="./build/classes" includes="**/*.class" excludes="**/agent/*.class, **/console/*.class" />
 
       <!-- Required Jars -->
       <zipfileset excludes="META-INF/*.MF" src="lib/miglayout-3.7.3.1-swt.jar"/>

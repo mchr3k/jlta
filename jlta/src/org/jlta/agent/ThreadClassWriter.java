@@ -39,7 +39,7 @@ public class ThreadClassWriter extends ClassVisitor
         mv = new ThreadSetNameVisitor(mv, access, name, desc);
       }
     }
-    else if ("run".equals(name) &&
+    if ("run".equals(name) &&
              "()V".equals(desc))
     {
       mv = new ThreadRunVisitor(mv, access, name, desc);

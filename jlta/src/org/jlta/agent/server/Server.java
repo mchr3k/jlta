@@ -1,5 +1,8 @@
 package org.jlta.agent.server;
 
+import org.jlta.agent.Tracking;
+import org.jlta.common.TrackingData;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -7,11 +10,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.jlta.agent.Tracking;
-import org.jlta.common.ThreadData;
 
 public class Server extends Thread
 {
@@ -79,13 +77,17 @@ public class Server extends Thread
           }
           else if ("fetch".equals(message))
           {
-            Map<Integer, ThreadData> copy = new HashMap<Integer, ThreadData>(Tracking.data);
+            TrackingData copy = Tracking.data.staticCopy();
             objOut.writeObject(copy);
             objOut.flush();
             
             // Reset the output stream to avoid caching any of the ThreadData objects
             // which we just sent.
             objOut.reset();
+          }
+          else if ("prune".equals(message))
+          {
+              Tracking.data.prune();
           }
           else
           {

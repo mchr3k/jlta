@@ -15,18 +15,20 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
   public final String context;
 
   public long startTime = 0;
-  public ThreadData.ThreadState state;
+  public ThreadState state;
   public volatile long elapsed = 0;
+  public int id;
 
   public enum ThreadState
   {
     ALLOCATED,
     STARTED,
-    FINISHED;
+    FINISHED
   }
 
   public ThreadData(Thread t)
   {
+    id = System.identityHashCode(t);
     name = t.getName();
     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
     if ((stackTrace != null) && (stackTrace.length > 4))
@@ -78,7 +80,17 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
     state = ThreadState.ALLOCATED;
   }
 
-  public void runEnter()
+    public ThreadData(int id, String name, StackTraceElement[] newThreadStack, String context, long startTime, long elapsed, ThreadState state) {
+        this.newThreadStack = newThreadStack;
+        this.context = context;
+        this.name = name;
+        this.startTime = startTime;
+        this.state = state;
+        this.elapsed = elapsed;
+        this.id = id;
+    }
+
+    public void runEnter()
   {
     startTime = System.currentTimeMillis();
     state = ThreadState.STARTED;
@@ -96,52 +108,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
     return name;
   }
 
-  public static class StackTraceArrayWrap
-  {
-    public final StackTraceElement[] stack;
-
-    public StackTraceArrayWrap(StackTraceElement[] stack)
-    {
-      this.stack = stack;
-    }
-
     @Override
-    public int hashCode()
-    {
-      return Arrays.hashCode(stack);
-    }
-
-    @Override
-    public boolean equals(Object obj)
-    {
-      if (obj instanceof StackTraceArrayWrap)
-      {
-        StackTraceArrayWrap objStack = (StackTraceArrayWrap) obj;
-        return Arrays.equals(stack, objStack.stack);
-      }
-      else
-      {
-        return false;
-      }
-    }
-
-    @Override
-    public String toString()
-    {
-      StringBuilder str = new StringBuilder();
-      for (int ii = 0; ii < stack.length; ii++)
-      {
-        str.append(stack[ii].toString());
-        if (ii < (stack.length - 1))
-        {
-          str.append("\n");
-        }
-      }
-      return str.toString();
-    }
-  }
-
-  @Override
   public int compareTo(ThreadData tdata)
   {
     return name.compareTo(tdata.name);
