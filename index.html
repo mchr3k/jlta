@@ -13,6 +13,10 @@ title: Home
   <li><a href="http://intracesite.appspot.com/files/jlta.jar">jlta.jar</a> (Windows/Linux)
   <li><a href="http://intracesite.appspot.com/files/JLTA.app.tar">JLTA.app.tar</a> (OSX)
   </ul>
+<li>There is also a command line client:
+  <ul>
+  <li><a href="http://intracesite.appspot.com/files/jlta-console.jar">jlta-console</a> (All)
+  </ul>
 <li>And the Java Agent for collecting Thread data:
   <ul>
   <li><a href="http://intracesite.appspot.com/files/jlta-agent.jar">jlta-agent</a> (All)
@@ -256,3 +260,9 @@ Stack:
 <li>Contexts - When the JLTA agent is run under Tomcat, JLTA an filter threads by the webapp which allocated them.
 <li>Limit Stack - Restrict the size of the stack being examined to the top N frames.
 </ul>
+
+<h3>Console Client</h3>
+
+<p>You can also use the console client to fetch data from the agent:
+
+<pre>java -jar jlta-console.jar -host hostname -port port</pre>
