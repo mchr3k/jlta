@@ -69,7 +69,7 @@
       <fileset dir="./build/classes" includes="**/console/**/*.class" />
       <fileset dir="./build/classes" includes="**/formatters/**/*.class" />
 
-      <zipfileset excludes="META-INF/*.MF" src="./lib/args4j-2.0.25.jar"/>
+      <zipfileset excludes="META-INF/*.MF" src="./lib/args4j-2.0.26.jar"/>
     </jar>
     <copy file="./build/jars/jlta-console.jar" todir="./lib/" />
 

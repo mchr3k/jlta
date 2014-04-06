@@ -88,8 +88,9 @@ public class ThreadClassWriter extends ClassVisitor
 
       // Add tracking call to start of try block
       this.loadThis();
-      this.invokeStatic(Type.getType(Tracking.class),
-                        Method.getMethod("void runEnter (Thread)"));
+      Type trackingType = Type.getType(Tracking.class);
+      Method runEnterMethod = Method.getMethod("void runEnter (Thread)");
+      this.invokeStatic(trackingType, runEnterMethod);
     }
 
     @Override
@@ -148,8 +149,9 @@ public class ThreadClassWriter extends ClassVisitor
     private void callRunReturn()
     {
       this.loadThis();
-      this.invokeStatic(Type.getType(Tracking.class),
-                        Method.getMethod("void runReturn (Thread)"));
+      Type trackingType = Type.getType(Tracking.class);
+      Method runReturnMethod = Method.getMethod("void runReturn (Thread)");
+      this.invokeStatic(trackingType, runReturnMethod);
     }
   }
 

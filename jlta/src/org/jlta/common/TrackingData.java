@@ -5,15 +5,16 @@ import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import static java.util.Map.Entry;
 
 /**
  * Wrapper object for all data capture on the server
  */
 public class TrackingData implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     public final String jvmId;
     public final Map<Integer, ThreadData> threadsMap;
 

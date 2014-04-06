@@ -1,6 +1,13 @@
 package org.jlta.ui;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Date;
+import java.util.List;
+
 import net.miginfocom.swt.MigLayout;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
@@ -9,24 +16,24 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.widgets.*;
+import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Combo;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Group;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.MessageBox;
+import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Spinner;
+import org.eclipse.swt.widgets.Text;
 import org.jlta.common.ServerCommunication;
+import org.jlta.common.ServerCommunication.State;
 import org.jlta.common.ServerDataProcessor;
-import org.jlta.common.ThreadData;
 import org.jlta.common.TrackingData;
 import org.jlta.formatters.IDataFormatter;
 import org.jlta.formatters.OneLineFormatter;
 import org.jlta.formatters.UIDataFormatter;
-
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.jlta.common.ServerCommunication.State;
 
 public class UI
 {
@@ -60,10 +67,8 @@ public class UI
   private final Group outputGroup;
   private final Text outputText;
 
-  private Map<Integer, ThreadData> data = new HashMap<Integer, ThreadData>();
-
-  private ServerCommunication server = new ServerCommunication();
-    private IDataFormatter dataFormatter = new UIDataFormatter();
+  private final ServerCommunication server = new ServerCommunication();
+    private final IDataFormatter dataFormatter = new UIDataFormatter();
 
 
     public UI(Shell xiWindow)
