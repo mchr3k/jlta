@@ -3,6 +3,8 @@ package org.jlta.agent;
 import org.jlta.common.ThreadData;
 import org.jlta.common.ThreadData.ThreadState;
 import org.jlta.common.TrackingData;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -12,6 +14,13 @@ public class Tracking
   public static final TrackingData data = new TrackingData();
 
   private static AtomicBoolean shutdownHookRequired = new AtomicBoolean(true);
+
+  public static void newClass(Object t) {
+    StringWriter sw = new StringWriter();
+    new Throwable("").printStackTrace(new PrintWriter(sw));
+    String stackTrace = sw.toString();
+    data.constructorSites.add(t.getClass().getCanonicalName() + "\t" + stackTrace);
+  }
 
   public static void newThread(Thread t)
   {

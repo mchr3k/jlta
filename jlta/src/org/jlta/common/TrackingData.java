@@ -7,6 +7,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -17,15 +20,18 @@ public class TrackingData implements Serializable {
 
     public final String jvmId;
     public final Map<Integer, ThreadData> threadsMap;
+    public final List<String> constructorSites;
 
     public TrackingData() {
         jvmId = ManagementFactory.getRuntimeMXBean().getName();
         threadsMap =  new ConcurrentHashMap<Integer, ThreadData>();
+        constructorSites = Collections.synchronizedList(new ArrayList<String>());
     }
 
-    public TrackingData(String jvmId, Map<Integer, ThreadData> threadsMap) {
+    public TrackingData(String jvmId, Map<Integer, ThreadData> threadsMap, List<String> constructorSites) {
         this.jvmId = jvmId;
         this.threadsMap = threadsMap;
+        this.constructorSites = constructorSites;
     }
 
     /**
@@ -40,7 +46,8 @@ public class TrackingData implements Serializable {
      */
     public TrackingData staticCopy() {
         Map<Integer,ThreadData> staticData = new HashMap<Integer, ThreadData>(threadsMap);
-        return new TrackingData(jvmId,staticData);
+        List<String> constructorSites = new ArrayList<String>(this.constructorSites);
+        return new TrackingData(jvmId,staticData,constructorSites);
     }
 
     /**

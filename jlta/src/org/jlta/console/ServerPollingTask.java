@@ -74,6 +74,13 @@ public class ServerPollingTask{
     }
 
     private void processReceivedData(TrackingData data) {
+      System.out.println("Got data " + data.toString());
+      for (String s: data.constructorSites) {
+        log(s);
+      }
+    }
+
+    private void oldProcessReceivedData(TrackingData data) {
         if(jvmId == null){
             jvmId = data.jvmId;
         }
