@@ -40,7 +40,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
       newThreadStack = new StackTraceElement[0];
     }
     String context = "";
-    if ((t.getContextClassLoader().getClass() != null) &&
+    /*if ((t.getContextClassLoader().getClass() != null) &&
          t.getContextClassLoader().getClass().getName().equals("org.apache.catalina.loader.WebappClassLoader"))
     {
       ClassLoader contextCL = t.getContextClassLoader();
@@ -75,7 +75,7 @@ public class ThreadData implements Serializable, Comparable<ThreadData>
         // Ignore
       }
 
-    }
+    }*/
     this.context = context;
     state = ThreadState.ALLOCATED;
   }
