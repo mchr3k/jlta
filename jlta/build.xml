@@ -26,7 +26,7 @@
     <mkdir dir="./build" />
     <mkdir dir="./build/classes" />
 
-    <javac destdir="./build/classes" debug="true" source="1.6" target="1.6"
+    <javac destdir="./build/classes" debug="true" source="1.8" target="1.8"
            includeantruntime="false">
       <src path="./src"/>
       <classpath>
@@ -51,8 +51,20 @@
       </manifest>
       <fileset dir="./build/classes" includes="**/agent/**/*.class" />
       <fileset dir="./build/classes" includes="**/common/**/*.class" />
-      <zipfileset excludes="META-INF/*.MF" src="./lib/asm-debug-all-4.0.jar"/>
+
+      <zipfileset excludes="META-INF/*.MF" src="./lib/asm-6.0/lib/asm-6.0.jar"/>
       <rule pattern="org.objectweb.asm.**" result="org.jlta.internal.objectweb.asm.@1"/>
+      <zipfileset excludes="META-INF/*.MF" src="./lib/asm-6.0/lib/asm-analysis-6.0.jar"/>
+      <rule pattern="org.objectweb.asm.**" result="org.jlta.internal.objectweb.asm.@1"/>
+      <zipfileset excludes="META-INF/*.MF" src="./lib/asm-6.0/lib/asm-commons-6.0.jar"/>
+      <rule pattern="org.objectweb.asm.**" result="org.jlta.internal.objectweb.asm.@1"/>
+      <zipfileset excludes="META-INF/*.MF" src="./lib/asm-6.0/lib/asm-tree-6.0.jar"/>
+      <rule pattern="org.objectweb.asm.**" result="org.jlta.internal.objectweb.asm.@1"/>
+      <zipfileset excludes="META-INF/*.MF" src="./lib/asm-6.0/lib/asm-util-6.0.jar"/>
+      <rule pattern="org.objectweb.asm.**" result="org.jlta.internal.objectweb.asm.@1"/>
+      <zipfileset excludes="META-INF/*.MF" src="./lib/asm-6.0/lib/asm-xml-6.0.jar"/>
+      <rule pattern="org.objectweb.asm.**" result="org.jlta.internal.objectweb.asm.@1"/>
+
       <zipfileset excludes="META-INF/*.MF" src="./lib/commons-io-2.1.jar"/>
       <rule pattern="org.apache.commons.**" result="org.jlta.internal.apache.commons.@1"/>
     </jarjar>
