@@ -25,10 +25,10 @@ public class Tracking
     //if (t instanceof Executors.DefaultThreadFactory) {
       //Executors.DefaultThreadFactory x = (Executors.DefaultThreadFactory)t;
       //Field field = Executors.DefaultThreadFactory.class.getDeclaredField("poolNumber");
-      Field field = t.getClass().getDeclaredField("poolNumber");
+      Field field = t.getClass().getDeclaredField("namePrefix");
       field.setAccessible(true);
-      AtomicInteger value = (AtomicInteger)field.get(t);
-      logicalId = "pool-" + value.get();
+      String value = (String)field.get(t);
+      logicalId = value;
     //}
     } catch (Exception e) {
     }
