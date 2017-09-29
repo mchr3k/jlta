@@ -3,8 +3,14 @@ package org.jlta.agent;
 import org.jlta.common.ThreadData;
 import org.jlta.common.ThreadData.ThreadState;
 import org.jlta.common.TrackingData;
+import java.io.StringWriter;
+import java.io.PrintWriter;
+import java.lang.reflect.*;
+import java.util.concurrent.Executors;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+
 
 
 public class Tracking
@@ -12,6 +18,26 @@ public class Tracking
   public static final TrackingData data = new TrackingData();
 
   private static AtomicBoolean shutdownHookRequired = new AtomicBoolean(true);
+
+  public static void newClass(Object t) {
+    String logicalId = "nothing-";
+    try {
+    //if (t instanceof Executors.DefaultThreadFactory) {
+      //Executors.DefaultThreadFactory x = (Executors.DefaultThreadFactory)t;
+      //Field field = Executors.DefaultThreadFactory.class.getDeclaredField("poolNumber");
+      Field field = t.getClass().getDeclaredField("namePrefix");
+      field.setAccessible(true);
+      String value = (String)field.get(t);
+      logicalId = value;
+    //}
+    } catch (Exception e) {
+    }
+    StringWriter sw = new StringWriter();
+    new Throwable("").printStackTrace(new PrintWriter(sw));
+    String stackTrace = sw.toString();
+    data.constructorSites.add(
+      t.getClass().getCanonicalName() + "\t" + logicalId  + "\t" + stackTrace);
+  }
 
   public static void newThread(Thread t)
   {

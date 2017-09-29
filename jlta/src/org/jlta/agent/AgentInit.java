@@ -43,7 +43,10 @@ public class AgentInit
     }
 
     // Add transformer
-    inst.addTransformer(new ThreadClassTransformer(false), true);
+    //inst.addTransformer(new ThreadClassTransformer(false), true);
+    inst.addTransformer(new ConstructorTransformer(false, "java/util/concurrent/Executors$DefaultThreadFactory"), true);
+    inst.addTransformer(new ConstructorTransformer(false, "java/util/concurrent/Executors$PrivilegedThreadFactory"), true);
+
 
     // Retransform all loaded classes
     for (Class<?> loadedClass : inst.getAllLoadedClasses())
